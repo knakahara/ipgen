@@ -2765,7 +2765,8 @@ rfc2544_test(int unsigned n)
 
 	case RFC2544_WARMUP0:
 		memcpy(&statetime, &currenttime_main, sizeof(struct timeval));
-		statetime.tv_sec += 3;	/* wait 3sec */
+//		statetime.tv_sec += 3;	/* wait 3sec */
+		statetime.tv_sec += 10;	/* wait 10sec */
 		state = RFC2544_WARMUP;
 		break;
 	case RFC2544_WARMUP:
