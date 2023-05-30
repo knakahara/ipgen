@@ -160,6 +160,7 @@ int opt_rfc2544_trial_duration = 60;	/* default 60sec */
 char *opt_rfc2544_pktsize;
 int opt_rfc2544_slowstart = 0;
 double opt_rfc2544_ppsresolution = 0.0;	/* default 0.00% */
+double opt_rfc2544_initialrate = 0.0;
 char *opt_rfc2544_output_json = NULL;
 
 #ifdef IPG_HACK
@@ -2176,6 +2177,8 @@ usage(void)
 	       "					rfc2544 tolerable error rate (0-100.0, default: 0.00)\n"
 	       "	--rfc2544-pps-resolution <percent>\n"
 	       "					rfc2544 limit of resolution of a pps (0-100.0, default: 0)\n"
+	       "	--rfc2544-initial-rate <percent>\n"
+	       "					rfc2544 initial rate, percent of wire rate (0-100.0, default: none)\n"
 	       "	--rfc2544-trial-duration <sec>	rfc2544 trial duration time (default: 60)\n"
 	       "	--rfc2544-pktsize <size>[,<size>...]]\n"
 	       "					test only specified pktsize. (default: 46,110,494,1006,1262,1390,1500)\n"
@@ -2569,6 +2572,7 @@ rfc2544_showresult(void)
 	printf("rfc2544 tolerable error rate: %.4f%%\n", opt_rfc2544_tolerable_error_rate);
 	printf("rfc2544 trial duration: %d sec\n", opt_rfc2544_trial_duration);
 	printf("rfc2544 pps resolution: %.4f%%\n", opt_rfc2544_ppsresolution);
+	printf("rfc2544 initial rate: %.4f%%\n", opt_rfc2544_initialrate);
 	printf("\n");
 
 	if (linkspeed == 100)
@@ -2794,7 +2798,10 @@ rfc2544_test(int unsigned n)
 			rfc2544_work[rfc2544_nthtest].maxup = rfc2544_work[rfc2544_nthtest].maxpps / 2;
 
 		rfc2544_work[rfc2544_nthtest].prevpps = 0;
-		rfc2544_work[rfc2544_nthtest].curpps = rfc2544_work[rfc2544_nthtest].maxup;
+		if (opt_rfc2544_initialrate > 0.0)
+			rfc2544_work[rfc2544_nthtest].curpps = rfc2544_work[rfc2544_nthtest].maxpps * opt_rfc2544_initialrate / 100.0;
+		else
+			rfc2544_work[rfc2544_nthtest].curpps = rfc2544_work[rfc2544_nthtest].maxup;
 
 		memcpy(&statetime, &currenttime_main, sizeof(struct timeval));
 		statetime.tv_sec += 2;	/* wait 2sec */
@@ -3479,6 +3486,7 @@ static struct option longopts[] = {
 	{	"rfc2544-slowstart",		no_argument,		0,	0	},
 	{	"rfc2544-pps-resolution",	required_argument,	0,	0	},
 	{	"rfc2544-trial-duration",	required_argument,	0,	0	},
+	{	"rfc2544-initial-rate",		required_argument,	0,	0	},
 	{	"rfc2544-pktsize",		required_argument,	0,	0	},
 	{	"rfc2544-output-json",		required_argument,	0,	0	},
 	{	"nocurses",			no_argument,		0,	0	},
@@ -3821,6 +3829,13 @@ main(int argc, char *argv[])
 				if ((opt_rfc2544_ppsresolution > 100.0) ||
 				    (opt_rfc2544_ppsresolution < 0.0)) {
 					fprintf(stderr, "illegal pps resolution rate. must be 0.0-100.0: %s\n", optarg);
+					exit(1);
+				}
+			} else if (strcmp(longopts[optidx].name, "rfc2544-initial-rate") == 0) {
+				opt_rfc2544_initialrate = strtod(optarg, (char **)NULL);
+				if ((opt_rfc2544_initialrate > 100.0) ||
+				    (opt_rfc2544_initialrate < 0.0)) {
+					fprintf(stderr, "illegal initial rate. must be 0.0-100.0: %s\n", optarg);
 					exit(1);
 				}
 			} else if (strcmp(longopts[optidx].name, "rfc2544-trial-duration") == 0) {
